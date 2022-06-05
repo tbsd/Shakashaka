@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- steps to add to build additions -->
+<root xmlns:android="http://schemas.android.com/apk/res/android">
+	<!-- init section is always evaluated once per architecture -->
+	<init>
+		<setBool result="bSupported1" value="false"/>
+		<setBool result="bSupported2" value="false"/>
+		<isArch arch="armeabi-v7a">
+			<setBool result="bSupported1" value="true"/>
+		</isArch>
+		<isArch arch="arm64-v8a">
+			<setBool result="bSupported2" value="true"/>
+		</isArch>
+	</init>
+
+	<!-- optional files or directories to copy to Intermediate/Android/APK -->
+	<resourceCopies>
+		<isArch arch="armeabi-v7a">
+			<copyFile src="$S(PluginDir)/Android/armeabi-v7a/liblpsolve55j_armeabi-v7a.so"
+						dst="$S(BuildDir)/Android/armeabi-v7a/liblpsolve55j_armeabi-v7a.so" />
+		</isArch>
+		<isArch arch="arm64-v8a">
+			<copyFile
+				src="$S(PluginDir)/Android/arm64-v8a/liblpsolve55j_arm64-v8a.so"
+				dst="$S(BuildDir)/Android/arm64-v8a/liblpsolve55j_arm64-v8a.so"
+			/>
+		</isArch>
+	</resourceCopies>
+	
+
+	<!-- optional libraries to load in GameActivity.java before libUE4.so -->
+	<soLoadLibrary>
+		<if condition="bSupported1">
+			<true>
+				<loadLibrary name="liblpsolve55j_armeabi-v7a.so" failmsg="Failed to load liblpsolve55j_armeabi-v7a.so library" />
+			</true>
+		</if>
+		<if condition="bSupported2">
+			<true>
+				<loadLibrary name="liblpsolve55j_arm64-v8a.so" failmsg="Failed to load liblpsolve55j_arm64-v8a.so library" />
+			</true>
+		</if>
+	</soLoadLibrary>
+</root>
+
