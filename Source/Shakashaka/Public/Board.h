@@ -67,19 +67,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int mWidth = 15;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int mHeight = 15;
+	int mHeight = 8;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int mSquaredCellsCount = 0;
+	int mSquaredCellsCount = 3;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int mNumberedCellsCount = 10;
+	int mNumberedCellsCount = 2;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int mMaxGenerateAttemptCount = 200;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int mTimeoutSec = 10;
+	int mTimeoutSec = 4;
 
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float mCellSz = 110.f;
+	float mCellSz = 104.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<class ANumberCell> mNumberCellType;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
