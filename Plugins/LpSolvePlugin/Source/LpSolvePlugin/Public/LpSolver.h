@@ -40,6 +40,7 @@ public:
 	std::shared_ptr<GameBoard> GetInitBoard();
 	std::shared_ptr<GameBoard> GetSolution();
 	FString ToString() const;
+	double GetTimeElapsed() const;
 
 	int mTimeoutSec = 0;
 
@@ -53,6 +54,7 @@ private:
 private:
 	int mWidth = 0;
 	int mHeight = 0;
+	double mTimeElapsed = 0;
 	std::shared_ptr<GameBoard> mInitBoard;
 	std::shared_ptr<GameBoard> mSolution;
 	std::shared_ptr<lprec> lp;

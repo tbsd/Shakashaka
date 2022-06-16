@@ -28,6 +28,7 @@ bool LpSolver::IsBlack(int n) {
 void LpSolver::InitBoard(std::shared_ptr<LpSolver::GameBoard> board){
 	mInitBoard = board;
 	mSolution = nullptr;
+	mTimeElapsed = 0;
 	if (!mInitBoard || mInitBoard->empty())
 		return;
 	mWidth = mInitBoard->size();
@@ -466,6 +467,7 @@ bool LpSolver::Solve() {
 	UE_LOG(LogTemp, Log, TEXT("LpSolver::Solver(): number of constraints: %d"), get_Norig_rows(lp.get()));
 	UE_LOG(LogTemp, Log, TEXT("LpSolver::Solver(): solveing"));
 	auto result = solve(lp.get());
+	mTimeElapsed = time_elapsed(lp.get());
 	if (result == OPTIMAL || result == SUBOPTIMAL) {
 		UE_LOG(LogTemp, Log, TEXT("LpSolver::Solver(): solution found"));
 		UE_LOG(LogTemp, Log, TEXT("LpSolver::Solver():4l time elapsed: %f"), time_elapsed(lp.get()));
@@ -502,16 +504,28 @@ std::shared_ptr<LpSolver::GameBoard> LpSolver::GetSolution() {
 	return mSolution;
 }
 
+double LpSolver::GetTimeElapsed() const {
+	return mTimeElapsed;
+}
+
 FString LpSolver::ToString() const {
 	FString ss;
+		UE_LOG(LogTemp, Warning, TEXT("HEHMDA LpSolver::Solver(): toString 1; mWidth: %d, mHeight: %d"), mWidth, mHeight);
 	if (!mInitBoard)
 		return ss;
-	auto to_string = [&ss](std::shared_ptr<GameBoard> board) {
-		for (size_t j = 0; j < board->size(); ++j) {
-			for (size_t i = 0; i < (*board)[j].size(); ++i) {
+	UE_LOG(LogTemp, Warning, TEXT("HEHMDA LpSolver::Solver(): toString 2 initBoard not null"));
+	auto to_string = [&ss, this](std::shared_ptr<GameBoard> board) {
+		if (!board) {
+			UE_LOG(LogTemp, Warning, TEXT("HEHMDA LpSolver::Solver(): toString 2.1 board null"));
+			return;
+		}
+		for (size_t j = 0; j < mHeight; ++j) {
+			UE_LOG(LogTemp, Warning, TEXT("HEHMD LpSolver::Solver(): toString 3 board->size() %d, j: %d"), board->size(), j);
+			for (size_t i = 0; i < mWidth; ++i) {
+				UE_LOG(LogTemp, Warning, TEXT("HEHMD LpSolver::Solver(): toString 4 board[j]->size() %d, i: %d"), (*board)[j].size(), i);
 				switch (auto cell = (*board)[i][j]) {
 				case CellType::Black:
-					ss += FString(TEXT( "■"));
+					ss += FString(TEXT("■"));
 					break;
 				case CellType::Black1: [[fallthrough]];
 				case CellType::Black2: [[fallthrough]];
@@ -543,6 +557,7 @@ FString LpSolver::ToString() const {
 	to_string(mInitBoard);
 	if (!mSolution)
 		return ss;
+	UE_LOG(LogTemp, Warning, TEXT("HEHMDA LpSolver::Solver(): toString 5 initBoard not null"));
 	ss += FString(TEXT("\nSolution:\n"));
 	to_string(mSolution);
 	return ss;

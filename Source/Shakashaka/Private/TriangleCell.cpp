@@ -9,8 +9,12 @@ ATriangleCell::ATriangleCell() : ACell() {
 }
 
 void ATriangleCell::OnClick(UPrimitiveComponent* pComponent, FKey button) {
-	UE_LOG(LogTemp, Warning, TEXT("HEHMDA CLICK"));
-	ChangeToNext();
+	//UE_LOG(LogTemp, Warning, TEXT("HEHMDA CLICK %s %s"), *(button.GetFName()), *(button.ToString()));
+	UE_LOG(LogTemp, Warning, TEXT("HEHMDA CLICK %s , %s "), *(button.GetFName().ToString()), *(button.ToString()) );
+	if (button.GetFName().ToString() == TEXT("LeftMouseButton"))
+		ChangeToNext();
+	else if (button.GetFName().ToString() == TEXT("RightMouseButton"))
+		ChangeType(LpSolver::CellType::Empty);
 }
 
 LpSolver::CellType ATriangleCell::GetNextType() {

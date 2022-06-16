@@ -73,9 +73,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int mNumberedCellsCount = 2;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int mMaxGenerateAttemptCount = 200;
+	int mMaxGenerationTimeSec = 100;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int mTimeoutSec = 4;
+	int mTimeout = 10;
 
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -88,6 +88,8 @@ public:
 	TSubclassOf<class ATriangleCell> mTriangleCellType;
 
 private:
+	int mTimeoutSec = 4; // timeout for one try
+
 	std::vector<std::vector<ACell*>> mBoard; // view
 	LpSolver mSolver;
 	std::shared_ptr<LpSolver::GameBoard> mInitBoard;

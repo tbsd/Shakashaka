@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <vector>
 #include <utility>
+#include <chrono>
 
 
 // Sets default values
@@ -59,7 +60,7 @@ void ABoard::Solve() {
 
 void ABoard::SetCell(int i, int j, LpSolver::CellType type) {
 	FTransform spawn_transform = GetActorTransform();
-	spawn_transform.SetLocation(spawn_transform.TransformPosition(FVector(i * mCellSz, j * mCellSz, 0.f)));
+	spawn_transform.SetLocation(spawn_transform.TransformPosition(FVector(i * mCellSz - mWidth * mCellSz / 2, j * mCellSz - mHeight * mCellSz / 2, 0.f)));
 	FActorSpawnParameters spawn_params;
 	if (mBoard[i][j]) {
 		mBoard[i][j]->Destroy();
@@ -126,7 +127,6 @@ bool ABoard::IsSolved() {
 	mSolver.InitBoard(current);
 	mSolver.mTimeoutSec = 20;
 	bool is_solvable = mSolver.Solve();
-	UE_LOG(LogTemp, Log, TEXT("ABoard::GenerateNew():\n%s"), *(mSolver.ToString()));
 	if (is_solvable) {
 		mSolutions.push_back(mSolver.GetSolution());
 		if (CmpBoards(current, mSolutions.back()) == CmpResult::Equal) {
@@ -144,8 +144,6 @@ bool ABoard::IsSolved() {
 void ABoard::BeginPlay()
 {
 	Super::BeginPlay();
-
-	GenerateNew();
 
 }
 
@@ -173,24 +171,47 @@ std::pair<int, int> ABoard::GetRandomCell() {
 }
 
 bool ABoard::GenerateNew() {
+	UE_LOG(LogTemp, Log, TEXT("HEHMDA ABoard::GenerateNew(): Tests start width: %d, height: %d"), mWidth, mHeight);
 	GEngine->AddOnScreenDebugMessage(2, 10, FColor::Green, TEXT("Генерируем новое поле..."));
-	for (int attempt = 0; attempt < mMaxGenerateAttemptCount; ++attempt) {
-		UE_LOG(LogTemp, Log, TEXT("ABoard::GenerateNew(): generating init board. Attempt: %d"), attempt);
+	auto current_timestamp = []() {return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); };
+	auto start = current_timestamp();
+	auto generation_end = start + mMaxGenerationTimeSec;
+	const int change_timeout = 5;
+	const int timeout_delta = 3;
+	int attempt_count = 0;
+	//int timeout = 4 - timeout_delta;
+	int timeout = mTimeout;
+	int found = 0; // HEHMDA
+	while (true) {
+	//while (current_timestamp() < generation_end) {
+		//if (attempt_count % change_timeout == 0)
+			//timeout += timeout_delta;
+		++attempt_count;
+		UE_LOG(LogTemp, Log, TEXT("HEHMDA ABoard::GenerateNew(): Tests time passed: %d"), current_timestamp() - start);
+		UE_LOG(LogTemp, Log, TEXT("HEHMDA ABoard::GenerateNew(): Tests generating init board. Attempt: %d, timeout: %d, found %d"), attempt_count, timeout, found);
+		UE_LOG(LogTemp, Log, TEXT("ABoard::GenerateNew(): generating init board. Attempt: %d, timeout: %d"), attempt_count, timeout);
 		ClearBoard();
 		InitBoard();
 		std::shared_ptr<LpSolver::GameBoard> board = GetCurrentBoard();
 		mSolver.InitBoard(board);
-		mSolver.mTimeoutSec = mTimeoutSec;
+		mSolver.mTimeoutSec = timeout;
 		bool is_solved = mSolver.Solve();
-		UE_LOG(LogTemp, Log, TEXT("ABoard::GenerateNew():\n%s"), *(mSolver.ToString()));
+		//UE_LOG(LogTemp, Log, TEXT("ABoard::GenerateNew():\n%s"), *(mSolver.ToString()));
 		if (is_solved) {
 			mInitBoard = GetCurrentBoard();
 			mSolutions.push_back(mSolver.GetSolution());
-			return true;
+			++found; // HEHMDA
+			attempt_count = 0;
+			//return true;
+			if (found == 10)
+				return true;
 		}
+		UE_LOG(LogTemp, Log, TEXT("HEHMDA1 ABoard::GenerateNew(): Tests generating init board. width, height, timout, attempt, isfound, time_elapsed, black, numbered: %d,%d,%d,%d,%d,%f,%d,%d"), 
+			mWidth, mHeight, timeout, attempt_count, is_solved, mSolver.GetTimeElapsed(), mSquaredCellsCount, mNumberedCellsCount);
 	}
 	UE_LOG(LogTemp, Log, TEXT("ABoard::GenerateNew(): failed to generate init board"));
 	GEngine->AddOnScreenDebugMessage(3, 10, FColor::Red, TEXT("Не удалось сгенерировать поле, попробуйте ещё раз"));
+	ClearBoard();
 	return false; // failed to generate
 }
 
@@ -213,7 +234,7 @@ void ABoard::InitBoard() {
 			mBoard[i].reserve(mHeight);
 			for (size_t j = 0; j < mHeight; ++j) {
 				FTransform spawn_transform = GetActorTransform();
-				spawn_transform.SetLocation(spawn_transform.TransformPosition(FVector(i * mCellSz, j * mCellSz, 0.f)));
+				spawn_transform.SetLocation(spawn_transform.TransformPosition(FVector(i * mCellSz - mWidth * mCellSz / 2, j * mCellSz - mHeight * mCellSz / 2, 0.f)));
 				FActorSpawnParameters spawn_params;
 				if (i == 0 || j == 0 || i == mWidth - 1 || j == mHeight - 1) { // border
 
@@ -232,7 +253,7 @@ void ABoard::InitBoard() {
 				auto point = GetRandomCell();
 				if (auto* c = GetIfOkToPlaceBlackCell(point)) {
 					FTransform spawn_transform = GetActorTransform();
-					spawn_transform.SetLocation(spawn_transform.TransformPosition(FVector(point.first * mCellSz, point.second * mCellSz, 0.f)));
+					spawn_transform.SetLocation(spawn_transform.TransformPosition(FVector(point.first * mCellSz - mWidth * mCellSz / 2, point.second * mCellSz - mHeight * mCellSz / 2, 0.f)));
 					FActorSpawnParameters spawn_params;
 					c->Destroy();
 					switch (type) {
@@ -328,3 +349,4 @@ std::shared_ptr<LpSolver::GameBoard> ABoard::GetCurrentBoard() {
 	}
 	return board;
 }
+
