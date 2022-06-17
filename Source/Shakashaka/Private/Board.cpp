@@ -13,6 +13,7 @@
 #include <vector>
 #include <utility>
 #include <chrono>
+#include <fstream>
 
 
 // Sets default values
@@ -171,24 +172,17 @@ std::pair<int, int> ABoard::GetRandomCell() {
 }
 
 bool ABoard::GenerateNew() {
-	UE_LOG(LogTemp, Log, TEXT("HEHMDA ABoard::GenerateNew(): Tests start width: %d, height: %d"), mWidth, mHeight);
 	GEngine->AddOnScreenDebugMessage(2, 10, FColor::Green, TEXT("Генерируем новое поле..."));
+	ClearBoard();
 	auto current_timestamp = []() {return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); };
 	auto start = current_timestamp();
 	auto generation_end = start + mMaxGenerationTimeSec;
 	const int change_timeout = 5;
 	const int timeout_delta = 3;
 	int attempt_count = 0;
-	//int timeout = 4 - timeout_delta;
 	int timeout = mTimeout;
-	int found = 0; // HEHMDA
-	while (true) {
-	//while (current_timestamp() < generation_end) {
-		//if (attempt_count % change_timeout == 0)
-			//timeout += timeout_delta;
+	while (current_timestamp() < generation_end) {
 		++attempt_count;
-		UE_LOG(LogTemp, Log, TEXT("HEHMDA ABoard::GenerateNew(): Tests time passed: %d"), current_timestamp() - start);
-		UE_LOG(LogTemp, Log, TEXT("HEHMDA ABoard::GenerateNew(): Tests generating init board. Attempt: %d, timeout: %d, found %d"), attempt_count, timeout, found);
 		UE_LOG(LogTemp, Log, TEXT("ABoard::GenerateNew(): generating init board. Attempt: %d, timeout: %d"), attempt_count, timeout);
 		ClearBoard();
 		InitBoard();
@@ -196,18 +190,12 @@ bool ABoard::GenerateNew() {
 		mSolver.InitBoard(board);
 		mSolver.mTimeoutSec = timeout;
 		bool is_solved = mSolver.Solve();
-		//UE_LOG(LogTemp, Log, TEXT("ABoard::GenerateNew():\n%s"), *(mSolver.ToString()));
 		if (is_solved) {
 			mInitBoard = GetCurrentBoard();
 			mSolutions.push_back(mSolver.GetSolution());
-			++found; // HEHMDA
 			attempt_count = 0;
-			//return true;
-			if (found == 10)
-				return true;
+			return true;
 		}
-		UE_LOG(LogTemp, Log, TEXT("HEHMDA1 ABoard::GenerateNew(): Tests generating init board. width, height, timout, attempt, isfound, time_elapsed, black, numbered: %d,%d,%d,%d,%d,%f,%d,%d"), 
-			mWidth, mHeight, timeout, attempt_count, is_solved, mSolver.GetTimeElapsed(), mSquaredCellsCount, mNumberedCellsCount);
 	}
 	UE_LOG(LogTemp, Log, TEXT("ABoard::GenerateNew(): failed to generate init board"));
 	GEngine->AddOnScreenDebugMessage(3, 10, FColor::Red, TEXT("Не удалось сгенерировать поле, попробуйте ещё раз"));
@@ -228,6 +216,7 @@ ATriangleCell* ABoard::GetIfOkToPlaceBlackCell(const std::pair<int, int>& p) {
 
 void ABoard::InitBoard() {
 	if (GetWorld()) {
+		ClearBoard();
 		mBoard.reserve(mWidth);
 		for (size_t i = 0; i < mWidth; ++i) {
 			mBoard.push_back({});
@@ -252,6 +241,7 @@ void ABoard::InitBoard() {
 			while (count > 0) {
 				auto point = GetRandomCell();
 				if (auto* c = GetIfOkToPlaceBlackCell(point)) {
+						UE_LOG(LogTemp, Warning, TEXT("HEHMDA point %d %d"), point.first, point.second);
 					FTransform spawn_transform = GetActorTransform();
 					spawn_transform.SetLocation(spawn_transform.TransformPosition(FVector(point.first * mCellSz - mWidth * mCellSz / 2, point.second * mCellSz - mHeight * mCellSz / 2, 0.f)));
 					FActorSpawnParameters spawn_params;
@@ -348,5 +338,74 @@ std::shared_ptr<LpSolver::GameBoard> ABoard::GetCurrentBoard() {
 		}
 	}
 	return board;
+}
+
+bool ABoard::RunTests() {
+	for (int sz = 11; sz < 17; ++sz) {
+		mHeight = mWidth = sz;
+		mSquaredCellsCount = 1;
+		mNumberedCellsCount = 0;
+		UE_LOG(LogTemp, Log, TEXT("HEHMDA ABoard::GenerateNew(): Tests start width: %d, height: %d"), mWidth, mHeight);
+		GEngine->AddOnScreenDebugMessage(2, 10, FColor::Green, TEXT("Генерируем новое поле..."));
+		auto current_timestamp = []() {return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); };
+		auto start = current_timestamp();
+		auto generation_end = start + 60 * 60;
+		//const int change_timeout = 30;
+		int attempt_count = 0;
+		const int max_attempt = 1000;
+		//int timeout = 4 - timeout_delta;
+		int timeout = 2 * 60;
+		int found = 0;
+		//while (true) {
+		while (current_timestamp() < generation_end && attempt_count <= max_attempt) {
+			++attempt_count;
+			UE_LOG(LogTemp, Log, TEXT("HEHMDA ABoard::GenerateNew(): Tests time passed: %d"), current_timestamp() - start);
+			UE_LOG(LogTemp, Log, TEXT("HEHMDA ABoard::GenerateNew(): Tests generating init board. Attempt: %d, timeout: %d, found %d"), attempt_count, timeout, found);
+			ClearBoard();
+			InitBoard();
+			std::shared_ptr<LpSolver::GameBoard> board = GetCurrentBoard();
+			mSolver.InitBoard(board);
+			mSolver.mTimeoutSec = timeout;
+			bool is_solved = mSolver.Solve();
+			std::ofstream o{ "C:\\Users\\tbsd\\Documents\\Unreal Projects\\ue\\Shakashaka\\tests.csv", std::ios_base::app };
+			if (is_solved) {
+				mInitBoard = GetCurrentBoard();
+				mSolutions.push_back(mSolver.GetSolution());
+				++found; // HEHMDA
+				//return true;
+				//if (found == 10)
+					//return true;
+			}
+			o << mWidth << "," << mHeight << "," << timeout << "," << attempt_count << "," << is_solved << "," << mSolver.GetTimeElapsed() << "," << mSquaredCellsCount << "," << mNumberedCellsCount << "," << mSolver.GetModelCreationTimeMs() << std::endl;
+			o.close();
+			FString str("width");
+			str.AppendInt(mWidth);
+			str.Append(" height");
+			str.AppendInt(mHeight);
+			str.Append(" timeout");
+			str.AppendInt(timeout);
+			str.Append(" attempt");
+			str.AppendInt(attempt_count);
+			str.Append(" is_solved");
+			str.AppendInt(is_solved);
+			str.Append(" timeElapsed");
+			str.AppendInt(mSolver.GetTimeElapsed());
+			str.Append(" mSquareedCellsCount");
+			str.AppendInt(mSquaredCellsCount);
+			str.Append(" mNumbered");
+			str.AppendInt(mNumberedCellsCount);
+			GEngine->AddOnScreenDebugMessage(attempt_count, 5, FColor::Yellow, str);
+			//GEngine->AddOnScreenDebugMessage(2, 10, FColor::Yellow, 
+				 //TEXT("HEHMDA1 ABoard::GenerateNew(): Tests generating init board. width, height, timout, attempt, isfound, time_elapsed, black, numbered: %d,%d,%d,%d,%d,%f,%d,%d"), 
+					//mWidth, mHeight, timeout, attempt_count, is_solved, mSolver.GetTimeElapsed(), mSquaredCellsCount, mNumberedCellsCount);
+		}
+			std::ofstream total{ "C:\\Users\\tbsd\\Documents\\Unreal Projects\\ue\\Shakashaka\\total.csv", std::ios_base::app };
+			total << mWidth << "," << attempt_count << "," << found << "," << current_timestamp() - start<< std::endl;
+			total.close();
+	}
+	UE_LOG(LogTemp, Log, TEXT("ABoard::GenerateNew(): failed to generate init board"));
+	GEngine->AddOnScreenDebugMessage(3, 10, FColor::Red, TEXT("Не удалось сгенерировать поле, попробуйте ещё раз"));
+	ClearBoard();
+	return false; // failed to generate
 }
 

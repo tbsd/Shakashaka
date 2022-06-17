@@ -44,6 +44,8 @@ public:
 	void GetHint();
 	UFUNCTION(BlueprintCallable)
 	void ResetToInitBoard();
+	UFUNCTION(BlueprintCallable)
+	bool RunTests();
 
 private:
 	enum class CmpResult {

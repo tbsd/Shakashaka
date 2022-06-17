@@ -14,10 +14,14 @@ void ANumberCell::SetNumber(int n) {
 		SetMeshComponent();
 		return;
 	}
-	UE_LOG(LogTemp, Error, TEXT("LpSolver::SetNumber() unexpected number: %d"), n);
+	UE_LOG(LogTemp, Error, TEXT("ANumberCell::SetNumber() unexpected number: %d"), n);
 }
 
 void ANumberCell::SetMeshComponent() {
+	if (!mCellMesh) {
+		UE_LOG(LogTemp, Warning, TEXT("ACell mesh is null"));
+		return;
+	}
 	switch (mNumber) {
 	case 1:
 		mCellMesh->SetStaticMesh(mBlack1);

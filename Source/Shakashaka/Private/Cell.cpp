@@ -10,7 +10,12 @@ ACell::ACell()
 	PrimaryActorTick.bCanEverTick = false;
 
 	mCellMesh = CreateDefaultSubobject<UStaticMeshComponent>("CellMesh");
-	SetRootComponent(mCellMesh);
+    if (!mCellMesh) {
+        UE_LOG(LogTemp, Warning, TEXT("ACell mesh is null"));
+    }
+    else {
+        SetRootComponent(mCellMesh);
+    }
 }
 
 // Called when the game starts or when spawned

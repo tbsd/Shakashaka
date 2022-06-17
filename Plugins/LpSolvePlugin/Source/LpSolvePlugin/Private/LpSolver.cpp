@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <functional>
+#include <chrono>
 
 #include "Containers/UnrealString.h" 
 
@@ -60,6 +61,8 @@ int LpSolver::GetVarNumber(int x, int y, LpSolver::CellType type) {
 }
 
 bool LpSolver::Solve() {
+	auto current_timestamp = []() {return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(); };
+	long long model_creation_start = current_timestamp();
 	UE_LOG(LogTemp, Log, TEXT("LpSolver::Solver() construction start!"));
 	if (!mInitBoard || mInitBoard->empty())
 		return false;
@@ -462,7 +465,7 @@ bool LpSolver::Solve() {
 
 	set_add_rowmode(lp.get(), FALSE);
 	// fake objective function
-	//write_lp(lp.get(), "C:\\Users\\tbsd\\Documents\\Unreal Projects\\ue\\Shakashaka\\model_fin.log");//HEHMDA
+	mModelCreationTime = current_timestamp() - model_creation_start;
 	UE_LOG(LogTemp, Log, TEXT("LpSolver::Solver(): construction finished"));
 	UE_LOG(LogTemp, Log, TEXT("LpSolver::Solver(): number of constraints: %d"), get_Norig_rows(lp.get()));
 	UE_LOG(LogTemp, Log, TEXT("LpSolver::Solver(): solveing"));
@@ -563,3 +566,6 @@ FString LpSolver::ToString() const {
 	return ss;
 }
 
+long long LpSolver::GetModelCreationTimeMs() const {
+	return mModelCreationTime;
+}
