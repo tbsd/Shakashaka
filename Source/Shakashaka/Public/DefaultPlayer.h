@@ -36,18 +36,20 @@ public:
 	UPROPERTY(EditAnywhere)
 	UStaticMeshComponent* StaticMeshComp;
 
+	UPROPERTY(EditAnywhere)
+	float mRotSpeed = 100.0f;
+
 public:
 	FVector2D MovementInput;
 	FVector2D CameraInput;
 	float ZoomFactor;
-	bool bZoomingIn;
+	bool mRotateBtnPressed = false;
 
 private:
 //Input functions
-void MoveForward(float AxisValue);
-void MoveRight(float AxisValue);
-void PitchCamera(float AxisValue);
-void YawCamera(float AxisValue);
-void ZoomIn();
-void ZoomOut();
+void RotateForward(float AxisValue);
+void RotateRight(float AxisValue);
+void Zoom(float AxisValue);
+void RotateBtnPressed();
+void RotateBtnReleased();
 };

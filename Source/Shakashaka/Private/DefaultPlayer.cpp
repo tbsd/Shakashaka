@@ -22,12 +22,10 @@ ADefaultPlayer::ADefaultPlayer()
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
 
 	//Assign SpringArm class variables.
-	SpringArmComp->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 50.0f), FRotator(-60.0f, 0.0f, 0.0f));
-	SpringArmComp->TargetArmLength = 400.f;
-	SpringArmComp->bEnableCameraLag = true;
-	SpringArmComp->CameraLagSpeed = 3.0f;
-	//Take control of the default Player
-	//AutoPossessPlayer = EAutoReceiveInput::Player0;
+	SpringArmComp->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, 50.0f), FRotator(-88.0f, 0.0f, 0.0f));
+	SpringArmComp->TargetArmLength = 1400.f;
+	SpringArmComp->bEnableCameraLag = false;
+	ZoomFactor = 0.5f;
 
 }
 
@@ -42,21 +40,35 @@ void ADefaultPlayer::BeginPlay()
 void ADefaultPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	//Zoom in if ZoomIn button is down, zoom back out if it's not
-	{
-		if (bZoomingIn)
-		{
-			ZoomFactor += DeltaTime / 0.5f;         //Zoom in over half a second
-		}
-		else
-		{
-			ZoomFactor -= DeltaTime / 0.25f;        //Zoom out over a quarter of a second
-		}
-		ZoomFactor = FMath::Clamp<float>(ZoomFactor, 0.0f, 1.0f);
+	ZoomFactor = FMath::Clamp<float>(ZoomFactor, 0.0f, 1.0f);
 
-		//Blend our camera's FOV and our SpringArm's length based on ZoomFactor
-		CameraComp->FieldOfView = FMath::Lerp<float>(90.0f, 60.0f, ZoomFactor);
-		SpringArmComp->TargetArmLength = FMath::Lerp<float>(400.0f, 300.0f, ZoomFactor);
+	// Zoom
+	CameraComp->FieldOfView = FMath::Lerp<float>(90.0f, 60.0f, ZoomFactor);
+	SpringArmComp->TargetArmLength = FMath::Lerp<float>(1400.0f, 200.0f, ZoomFactor);
+
+	// Rotation
+	if (mRotateBtnPressed) {
+		FTransform player_transform = GetActorTransform();
+		auto rot = player_transform.GetRotation();
+		FVector2D delta_rot;
+		delta_rot.X = DeltaTime * CameraInput.X * mRotSpeed;
+		delta_rot.Y = DeltaTime * CameraInput.Y * mRotSpeed;
+		FRotator forwad_rot(0.0f, 0.0f, delta_rot.X);
+		FVector actor_up = GetActorUpVector();
+		FVector rotated_up = forwad_rot.RotateVector(actor_up);
+		if (rot.X >= 0.0f && delta_rot.X < 0.0f || FVector::DotProduct(actor_up, { 0.0f, 0.0f, 1.0f }) < 0.2f && delta_rot.X > 0.0f)
+			delta_rot.X = 0.0f;
+		{
+
+			FRotator NewRotation = GetActorRotation();
+			NewRotation.Roll += delta_rot.X;
+			SetActorRotation(NewRotation);
+		}
+		{
+			FRotator NewRotation = GetActorRotation();
+			NewRotation.Yaw += delta_rot.Y;
+			SetActorRotation(NewRotation);
+		}
 	}
 }
 
@@ -65,43 +77,39 @@ void ADefaultPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	//Hook up events for "ZoomIn"
-	InputComponent->BindAction("ZoomIn", IE_Pressed, this, &ADefaultPlayer::ZoomIn);
-	InputComponent->BindAction("ZoomIn", IE_Released, this, &ADefaultPlayer::ZoomOut);
+	InputComponent->BindAction("RotateBtn", IE_Pressed, this, &ADefaultPlayer::RotateBtnPressed);
+	InputComponent->BindAction("RotateBtn", IE_Released, this, &ADefaultPlayer::RotateBtnReleased);
 
-	//Hook up every-frame handling for our four axes
-	InputComponent->BindAxis("MoveForward", this, &ADefaultPlayer::MoveForward);
-	InputComponent->BindAxis("MoveRight", this, &ADefaultPlayer::MoveRight);
-	InputComponent->BindAxis("CameraPitch", this, &ADefaultPlayer::PitchCamera);
-	InputComponent->BindAxis("CameraYaw", this, &ADefaultPlayer::YawCamera);
+	InputComponent->BindAxis("Zoom", this, &ADefaultPlayer::Zoom);
+	InputComponent->BindAxis("RotateForward", this, &ADefaultPlayer::RotateForward);
+	InputComponent->BindAxis("RotateRight", this, &ADefaultPlayer::RotateRight);
 }
 //Input functions
-void ADefaultPlayer::MoveForward(float AxisValue)
-{
-	MovementInput.X = FMath::Clamp<float>(AxisValue, -1.0f, 1.0f);
-}
-
-void ADefaultPlayer::MoveRight(float AxisValue)
-{
-	MovementInput.Y = FMath::Clamp<float>(AxisValue, -1.0f, 1.0f);
-}
-
-void ADefaultPlayer::PitchCamera(float AxisValue)
-{
-	CameraInput.Y = AxisValue;
-}
-
-void ADefaultPlayer::YawCamera(float AxisValue)
+void ADefaultPlayer::RotateForward(float AxisValue)
 {
 	CameraInput.X = AxisValue;
 }
 
-void ADefaultPlayer::ZoomIn()
+void ADefaultPlayer::RotateRight(float AxisValue)
 {
-	bZoomingIn = true;
+	CameraInput.Y = AxisValue;
 }
 
-void ADefaultPlayer::ZoomOut()
-{
-	bZoomingIn = false;
+void ADefaultPlayer::RotateBtnPressed() {
+	mRotateBtnPressed = true;
 }
+
+void ADefaultPlayer::RotateBtnReleased() {
+	mRotateBtnPressed = false;
+}
+
+void ADefaultPlayer::Zoom(float AxisValue)
+{
+	if (AxisValue > 0.1f) {
+		ZoomFactor += 0.1f;
+	}
+	else if (AxisValue < -0.1f) {
+		ZoomFactor -= 0.1f;
+	}
+}
+
