@@ -146,6 +146,7 @@ void ABoard::BeginPlay()
 {
 	Super::BeginPlay();
 
+	GenerateNew();
 }
 
 // Called every frame
@@ -172,7 +173,7 @@ std::pair<int, int> ABoard::GetRandomCell() {
 }
 
 bool ABoard::GenerateNew() {
-	GEngine->AddOnScreenDebugMessage(2, 10, FColor::Green, TEXT("Генерируем новое поле..."));
+	//GEngine->AddOnScreenDebugMessage(2, 10, FColor::Green, TEXT("Генерируем новое поле..."));
 	ClearBoard();
 	auto current_timestamp = []() {return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); };
 	auto start = current_timestamp();
